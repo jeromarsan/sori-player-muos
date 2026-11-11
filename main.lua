@@ -69,6 +69,7 @@ function App.screenOn()
 end
 
 local menuSolo, swallowed = false, {}
+local shotCombo, volBefore = false, nil -- capture d'écran muOS (L2 + R2 + X)
 
 -- L1 / R1 seuls = morceau précédent / suivant, déclenché au relâchement ;
 -- L1 + R1 ensemble = lecture aléatoire de toute la musique.
@@ -102,8 +103,23 @@ local function press(a)
     end
     return
   end
-  if a == "l2" then App.volume(-0.05); return end
-  if a == "r2" then App.volume(0.05); return end
+  -- L2 + R2 ensemble = capture d'écran muOS (L2 + R2 + X) : on annule le volume,
+  -- on cache le bandeau et on ignore X, pour que la capture soit propre.
+  if a == "l2" or a == "r2" then
+    local other = (a == "l2") and "r2" or "l2"
+    if down[other] then
+      shotCombo = true
+      held.l2, held.r2 = nil, nil
+      if volBefore then P:setVolume(volBefore); App.saveSettings() end
+      App.toast = nil
+      return
+    end
+    if shotCombo then return end
+    if not held[a] then volBefore = P.volume end -- 1er appui (pas une répétition)
+    App.volume(a == "l2" and -0.05 or 0.05)
+    return
+  end
+  if shotCombo and (down.l2 or down.r2) then return end -- X de la capture, etc.
   if App.current and App.current.action then App.current.action(a) end
 end
 App.press = press
@@ -113,6 +129,7 @@ local function release(a)
   if swallowed[a] then swallowed[a] = nil; return end
   -- Menu appuyé seul (sans autre bouton) = éteindre l'écran
   if a == "menu" and menuSolo then menuSolo = false; App.screenOff() end
+  if (a == "l2" or a == "r2") and not down.l2 and not down.r2 then shotCombo = false end
   if a == "l1" or a == "r1" then
     if shoulderPending[a] then
       shoulderPending[a] = nil
