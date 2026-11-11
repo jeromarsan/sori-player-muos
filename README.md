@@ -12,10 +12,26 @@ Albums with cover art, favorites, shuffle, and the screen can turn off while the
 
 *Version française : [LISEZMOI.md](LISEZMOI.md)*
 
-<!-- Screenshots: add images to docs/screenshots/ and uncomment
-![Album list](docs/screenshots/albums.png)
-![Now playing](docs/screenshots/now.png)
--->
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/splash.png" width="320" alt="Splash screen"><br><sub>Splash screen</sub></td>
+    <td align="center"><img src="docs/screenshots/albums.png" width="320" alt="Album grid"><br><sub>Albums (grid) with the Favorites folder</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/album.png" width="320" alt="Inside an album"><br><sub>Inside an album</sub></td>
+    <td align="center"><img src="docs/screenshots/now-playing.png" width="320" alt="Now playing"><br><sub>Now playing</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/albums-list.png" width="320" alt="Album list view"><br><sub>List view</sub></td>
+    <td align="center"><img src="docs/screenshots/help.png" width="320" alt="Help and shortcuts"><br><sub>Built-in help and shortcuts</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/albums-light.png" width="320" alt="Light theme"><br><sub>Light theme</sub></td>
+    <td align="center"><img src="docs/screenshots/now-playing-light.png" width="320" alt="Now playing, light theme"><br><sub>Now playing, light theme</sub></td>
+  </tr>
+</table>
 
 ## Features
 
