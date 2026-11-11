@@ -30,7 +30,7 @@ Albums with cover art, favorites, shuffle, and the screen can turn off while the
 ## Installation
 
 1. Download `SoriPlayer-vX.Y.Z.zip` from the [Releases](../../releases) page.
-2. Extract it and copy the **`SoriPlayer`** folder to **`MUOS/application/`** on your SD card.
+2. Extract it and copy the **`SoriPlayer`** folder to **`/Primary Storage/MUOS/application/`** (the `MUOS/application` folder of your primary SD card).
 3. Put your music in a **`MUSIC`** folder at the root of SD1 and/or SD2, one folder per album.
 4. Launch **Sori Player** from **Applications**.
 
