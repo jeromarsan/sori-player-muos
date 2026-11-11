@@ -1,0 +1,16 @@
+# Fichiers créés sur la console à l'utilisation (pas dans le dépôt)
+sori.log
+save/
+library.cache
+settings.lua.bak
+
+# Moteur LÖVE éventuellement copié à la main dans l'appli
+bin/
+
+# Archives de release (publiées dans les Releases GitHub, pas dans le code)
+*.zip
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
