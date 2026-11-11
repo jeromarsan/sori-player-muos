@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.png">
+    <img src="docs/logo-light.png" alt="Sori Player" width="420">
+  </picture>
+</p>
+
 # Sori Player
 
 A music player for **muOS** handheld consoles, made with [LÖVE](https://love2d.org/).
