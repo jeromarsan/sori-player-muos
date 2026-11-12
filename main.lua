@@ -186,6 +186,7 @@ function love.load()
     help = require("screens.help"),
   }
   if st.view then App.screens.albums.view = st.view end
+  if st.mode == "artists" then App.screens.albums.mode = "artists" end
   if App.cfg.debug_input == "1" then rawLog = {} end
   Screen.delay = tonumber(App.cfg.ecran_veille) or 60
   local bf = io.open(BRIGHT, "r") -- uniquement sur la console (pas sur PC)

@@ -44,6 +44,48 @@ function Lib.start(roots, force)
   Lib.thread:start(cfgName, outName)
 end
 
+-- Vue "Artistes" : un artiste = l'artiste de chaque morceau (sinon l'artiste de l'album).
+-- Il contient ses albums, et un dossier "Sans album" pour ses morceaux sans tag album.
+local UNKNOWN_KEY = "\255unknown" -- trié en dernier
+function Lib.buildArtists(albums)
+  local by, list = {}, {}
+  for _, a in ipairs(albums) do
+    for _, t in ipairs(a.tracks) do
+      local name = (t.ar ~= "" and t.ar) or a.aa or ""
+      local key = name ~= "" and fold(name) or UNKNOWN_KEY
+      local ar = by[key]
+      if not ar then
+        ar = { artistItem = true, title = name, unknown = (name == ""), sortkey = key, key = "artist|" .. key,
+               albums = {}, albumSet = {}, loose = {}, tracks = {} }
+        if ar.unknown then ar.title = I.t("unknown_artist") end
+        by[key] = ar
+        list[#list + 1] = ar
+      end
+      ar.tracks[#ar.tracks + 1] = t
+      if t.na then
+        ar.loose[#ar.loose + 1] = t
+      elseif not ar.albumSet[a] then
+        ar.albumSet[a] = true
+        ar.albums[#ar.albums + 1] = a -- déjà dans l'ordre alphabétique des albums
+      end
+    end
+  end
+  table.sort(list, function(x, y) return x.sortkey < y.sortkey end)
+  for _, ar in ipairs(list) do
+    ar.albumSet = nil
+    -- image de l'artiste : son 1er album avec pochette, sinon l'album de son 1er morceau
+    for _, a in ipairs(ar.albums) do if a.cover then ar.rep = a; break end end
+    ar.rep = ar.rep or ar.albums[1] or (ar.tracks[1] and ar.tracks[1].album)
+    if #ar.loose > 0 then
+      table.sort(ar.loose, function(x, y) return fold(x.t) < fold(y.t) end)
+      for i, t in ipairs(ar.loose) do t.li = i end
+      ar.noalbum = { noalbum = true, title = I.t("no_album"), artist = ar.title, tracks = ar.loose,
+                     key = "noalbum|" .. ar.sortkey, cvState = "none", ci = 4, tint = T.logoColor(0.55) }
+    end
+  end
+  return list
+end
+
 local function build(covers)
   local byKey, albums = {}, {}
   for _, r in ipairs(Lib.tracks) do
@@ -83,6 +125,7 @@ local function build(covers)
   end)
   for i, a in ipairs(albums) do a.idx = i end
   Lib.albums = albums
+  Lib.artists = Lib.buildArtists(albums)
   Lib.all.tracks = Lib.tracks
   Lib.refreshFavs()
   Lib.version = Lib.version + 1
@@ -94,6 +137,10 @@ function Lib.relabel()
   Lib.fav.title = I.t("favorites")
   for _, a in ipairs(Lib.albums) do
     if a.various then a.artist = I.t("various") end
+  end
+  for _, ar in ipairs(Lib.artists or {}) do
+    if ar.unknown then ar.title = I.t("unknown_artist") end
+    if ar.noalbum then ar.noalbum.title = I.t("no_album"); ar.noalbum.artist = ar.title end
   end
 end
 

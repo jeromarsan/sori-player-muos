@@ -71,7 +71,7 @@ function S.action(a)
   elseif a == "y" then
     -- Y : favori (l'album entier sur la ligne "Écouter", sinon le morceau)
     if S.sel == 0 then
-      if not alb.fav then App.say("fav", Favs.toggleAlbum(alb)) end
+      if not alb.fav and not alb.noalbum then App.say("fav", Favs.toggleAlbum(alb)) end
     else
       App.say("fav", Favs.toggleTrack(alb.tracks[S.sel]))
       App.lib.refreshFavs()

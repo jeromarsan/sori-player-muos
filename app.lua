@@ -45,6 +45,7 @@ function App.crumbs(album)
   local c = { require("i18n").t("music") }
   if not album then return c end
   if album.all then c[2] = album.title; return c end
+  if album.noalbum then c[2] = album.artist; c[3] = album.title; return c end
   local f = album.folder or ""
   local rel
   for _, r in ipairs(App.roots) do
@@ -75,9 +76,9 @@ end
 
 function App.saveSettings()
   local P = App.player
-  local s = string.format("return {volume=%.2f,shuffle=%s,repeatMode=%d,view=%q,theme=%q,accent=%q,lang=%q}",
-    P.volume, tostring(P.shuffle), P.repeatMode, App.screens.albums.view or "grid", T.themeName, T.accentName,
-    require("i18n").choice)
+  local s = string.format("return {volume=%.2f,shuffle=%s,repeatMode=%d,view=%q,mode=%q,theme=%q,accent=%q,lang=%q}",
+    P.volume, tostring(P.shuffle), P.repeatMode, App.screens.albums.view or "grid", App.screens.albums.mode or "albums",
+    T.themeName, T.accentName, require("i18n").choice)
   pcall(love.filesystem.write, "settings.lua", s)
 end
 

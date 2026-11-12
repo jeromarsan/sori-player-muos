@@ -1,4 +1,4 @@
--- Réglages : thème, couleur principale, langue, affichage, bibliothèque, aide.
+-- Réglages : thème, couleur principale, langue, affichage, albums/artistes, bibliothèque, aide.
 -- Appliqués en direct et enregistrés.
 local T = require("theme")
 local W = require("widgets")
@@ -9,8 +9,8 @@ local lg = love.graphics
 local S = { sel = 1, t = 0, dt = 0, k = {} }
 
 local X, CW = 28, 584
-local ROW_Y0, ROW_H, ROW_GAP = 70, 58, 6
-local NROWS = 6
+local ROW_Y0, ROW_H, ROW_GAP = 66, 50, 4
+local NROWS = 7
 local function rowY(i) return ROW_Y0 + (i - 1) * (ROW_H + ROW_GAP) end
 
 local function accentIndex()
@@ -47,6 +47,11 @@ local function stepLang(d)
   apply()
 end
 
+local function setMode(m)
+  local A = App.screens.albums
+  if A.mode ~= m then A.setMode(m) end
+end
+
 local function setView(v)
   local A = App.screens.albums
   if A.view ~= v then A.setView(v) end
@@ -76,9 +81,14 @@ function S.action(a)
     if a == "left" then setView("grid")
     elseif a == "right" then setView("list")
     else setView(A.view == "grid" and "list" or "grid") end
-  elseif a == "a" and s == 5 then
+  elseif change and s == 5 then
+    local A = App.screens.albums
+    if a == "left" then setMode("albums")
+    elseif a == "right" then setMode("artists")
+    else setMode(A.mode == "artists" and "albums" or "artists") end
+  elseif a == "a" and s == 6 then
     if App.lib.state ~= "scanning" then App.rescan() end
-  elseif (a == "a" or a == "right") and s == 6 then
+  elseif (a == "a" or a == "right") and s == 7 then
     App.go("help")
   else return false end
   return true
@@ -97,14 +107,16 @@ local function card(i, title, sub, accent, ctrlW)
     T.rr("line", X + 1.5, y + 1.5, CW - 3, ROW_H - 3, 21)
   end
   local lw = CW - 20 - ctrlW - 36
-  T.text(T.f.h2, T.fit(T.f.h2, title, lw), X + 20, y + 6, T.c.ink)
-  if sub and sub ~= "" then T.marquee(T.f.small, sub, X + 20, y + 33, lw, T.c.ink3, 1, (S.sel == i) and ("set_sub" .. i) or nil) end
+  local hasSub = sub and sub ~= ""
+  local ty = hasSub and (y + 3) or (y + (ROW_H - T.f.h2:getHeight()) / 2) -- titre seul : centré
+  T.text(T.f.h2, T.fit(T.f.h2, title, lw), X + 20, ty, T.c.ink)
+  if sub and sub ~= "" then T.marquee(T.f.small, sub, X + 20, y + 28, lw, T.c.ink3, 1, (S.sel == i) and ("set_sub" .. i) or nil) end
   return y
 end
 
 -- interrupteur à deux choix, aligné à droite
 local function segmented(y, labels, on, accent)
-  local sw, sh = 220, 36
+  local sw, sh = 220, 34
   local sx, sy = X + CW - 20 - sw, y + (ROW_H - sh) / 2
   T.track(); T.rr("fill", sx, sy, sw, sh, sh / 2)
   T.set(accent); T.rr("fill", sx + 3 + (on - 1) * sw / 2, sy + 3, sw / 2 - 6, sh - 6, (sh - 6) / 2)
@@ -168,20 +180,24 @@ function S.draw()
   y = card(4, I.t("view"), nil, accent, 220)
   segmented(y, { I.t("h_grid"), I.t("h_list") }, App.screens.albums.view == "list" and 2 or 1, accent)
 
-  -- 5. Bibliothèque : dossier + nombre de morceaux, A = rechercher
+  -- 5. Afficher par : albums / artistes
+  y = card(5, I.t("by_label"), nil, accent, 220)
+  segmented(y, { I.t("by_albums"), I.t("by_artists") }, App.screens.albums.mode == "artists" and 2 or 1, accent)
+
+  -- 6. Bibliothèque : dossier + nombre de morceaux, A = rechercher
   local lib = App.lib
   local info = table.concat(App.roots, "  ·  ") .. "  ·  " .. I.n("tracks", #lib.tracks)
   if lib.state == "scanning" then info = I.t("still_scanning", lib.count) end
   local btn = I.t("rescan")
   local bw = T.f.small:getWidth(btn) + 52
-  y = card(5, I.t("library"), info, accent, bw)
+  y = card(6, I.t("library"), info, accent, bw)
   local bx, by, bh = X + CW - 20 - bw, y + (ROW_H - 34) / 2, 34
   T.set(accent, lib.state == "scanning" and 0.5 or 1); T.rr("fill", bx, by, bw, bh, bh / 2)
   T.keycap(bx + 7, by + 7, "A")
   T.text(T.f.small, btn, bx + 34, by + 7, T.c.white)
 
-  -- 6. Aide et raccourcis : A = ouvrir
-  y = card(6, I.t("help"), I.t("help_sub"), accent, 40)
+  -- 7. Aide et raccourcis : A = ouvrir
+  y = card(7, I.t("help"), I.t("help_sub"), accent, 40)
   T.set(accent); lg.circle("fill", X + CW - 20 - 18, y + ROW_H / 2, 17, 28)
   T.icon("chevron", X + CW - 20 - 17, y + ROW_H / 2, 20, T.c.white)
 

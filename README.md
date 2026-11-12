@@ -42,6 +42,7 @@ Albums with cover art, favorites, shuffle, and the screen can turn off while the
 - **Favorites** folder (yellow star), always first, with all your favorite tracks. Favorite albums move to the top of the list.
 - **Shuffle** all your music or a single album, repeat all / one track, seek ±10 s.
 - **Screen off, music on**: press Menu, or let it turn off by itself after 60 s without a button press while playing.
+- Browse **by album or by artist** (Settings). An artist shows all their albums, plus a **No album** folder for tracks without an album tag.
 - Dark or light theme, accent colour, grid or list view.
 - 6 languages: English, French, Spanish, Portuguese, Italian, German (automatic = console language).
 - Built-in **Help and shortcuts** page (Settings).

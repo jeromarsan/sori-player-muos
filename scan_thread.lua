@@ -23,7 +23,7 @@ if not cfg.force then
       local fn = loadstring(data)
       if fn then
         local ok, t = pcall(fn)
-        if ok and type(t) == "table" and t.v == 2 then cache = t.tracks or {} end
+        if ok and type(t) == "table" and t.v == 3 then cache = t.tracks or {} end
       end
     end
   end)
@@ -50,6 +50,7 @@ local function build(path, ext)
     ar = nonempty(tag.artist) or "",
     aa = nonempty(tag.albumartist) or "",
     al = nonempty(tag.album) or parent,
+    na = not nonempty(tag.album), -- pas de tag album (nom du dossier utilisé)
     n = tag.track or tonumber(fn) or 0,
     d = tag.disc or 1,
     co = tag.cover,
@@ -104,10 +105,10 @@ end
 
 -- Sauvegarde du cache
 pcall(function()
-  local lines = { "return {v=2,tracks={" }
+  local lines = { "return {v=3,tracks={" }
   for path, r in pairs(newcache) do
-    lines[#lines + 1] = string.format("[%q]={p=%q,f=%q,t=%q,ar=%q,aa=%q,al=%q,n=%d,d=%d,co=%s},",
-      path, r.p, r.f, r.t, r.ar, r.aa, r.al, r.n or 0, r.d or 1,
+    lines[#lines + 1] = string.format("[%q]={p=%q,f=%q,t=%q,ar=%q,aa=%q,al=%q,na=%s,n=%d,d=%d,co=%s},",
+      path, r.p, r.f, r.t, r.ar, r.aa, r.al, tostring(r.na == true), r.n or 0, r.d or 1,
       r.co and string.format("{off=%d,len=%d}", r.co.off, r.co.len) or "nil")
   end
   lines[#lines + 1] = "}}"

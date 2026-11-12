@@ -234,7 +234,8 @@ end
 
 -- Appelé par les écrans pour chaque album visible (prio petite = urgent)
 function C.want(album, prio)
-  if album.all or album.fav then return end
+  if album.artistItem then album = album.rep; if not album then return end end -- artiste : pochette de son album
+  if album.all or album.fav or album.noalbum then return end
   album.used = frame
   if album.cvState == nil and (not wanted[album] or wanted[album] > prio) then wanted[album] = prio end
 end
@@ -411,6 +412,7 @@ end
 function C.drawItem(item, x, y, size, t)
   if item.all then C.drawAll(x, y, size, t)
   elseif item.fav then C.drawFav(x, y, size)
+  elseif item.artistItem then C.draw(item.rep or item, x, y, size) -- artiste : pochette de son album
   else C.draw(item, x, y, size) end
 end
 

@@ -9,7 +9,7 @@ local I = require("i18n")
 local Favs = require("favs")
 local lg = love.graphics
 
-local S = { view = "grid", sel = 1, scroll = 0, t = 0, dt = 0, kmap = {}, items = {}, ver = -1, fver = -1, bg = { 0.29, 0.62, 1.0 } }
+local S = { view = "grid", mode = "albums", artist = nil, sel = 1, scroll = 0, t = 0, dt = 0, kmap = {}, items = {}, ver = -1, fver = -1, bg = { 0.29, 0.62, 1.0 } }
 
 local COLS, COVER, GAPX = 3, 144, 48
 local X0 = (T.W - (COLS * COVER + (COLS - 1) * GAPX)) / 2
@@ -26,10 +26,27 @@ local function rebuild()
   end
   if lib.favVersion ~= Favs.version then lib.refreshFavs() end
   S.items = {}
-  S.items[#S.items + 1] = lib.fav -- dossier Favoris : toujours en premier, même vide
-  for _, a in ipairs(lib.albums) do if Favs.isAlbum(a) then S.items[#S.items + 1] = a end end
-  for _, a in ipairs(lib.albums) do if not Favs.isAlbum(a) then S.items[#S.items + 1] = a end end
-  S.ver, S.fver = lib.version, Favs.version
+  if S.mode == "artists" then
+    -- après une nouvelle recherche, on retrouve l'artiste ouvert par sa clé
+    if S.artist and S.ver ~= lib.version then
+      local found
+      for _, ar in ipairs(lib.artists or {}) do if ar.key == S.artist.key then found = ar; break end end
+      S.artist = found
+    end
+    if S.artist then
+      -- un artiste : dossier "Sans album" en premier (s'il y en a), puis tous ses albums
+      if S.artist.noalbum then S.items[#S.items + 1] = S.artist.noalbum end
+      for _, a in ipairs(S.artist.albums) do S.items[#S.items + 1] = a end
+    else
+      S.items[#S.items + 1] = lib.fav -- dossier Favoris : toujours en premier, même vide
+      for _, ar in ipairs(lib.artists or {}) do S.items[#S.items + 1] = ar end
+    end
+  else
+    S.items[#S.items + 1] = lib.fav -- dossier Favoris : toujours en premier, même vide
+    for _, a in ipairs(lib.albums) do if Favs.isAlbum(a) then S.items[#S.items + 1] = a end end
+    for _, a in ipairs(lib.albums) do if not Favs.isAlbum(a) then S.items[#S.items + 1] = a end end
+  end
+  S.ver, S.fver, S.bmode, S.bartist = lib.version, Favs.version, S.mode, S.artist
   -- on garde la sélection sur le même élément
   if keep then
     for i, it in ipairs(S.items) do if it == keep then S.sel = i; break end end
@@ -37,7 +54,37 @@ local function rebuild()
   S.sel = T.clamp(S.sel, 1, math.max(1, #S.items))
 end
 
-local function stale() return S.ver ~= App.lib.version or S.fver ~= Favs.version end
+local function stale()
+  return S.ver ~= App.lib.version or S.fver ~= Favs.version or S.bmode ~= S.mode or S.bartist ~= S.artist
+end
+
+-- teinte d'un élément (un artiste prend celle de la pochette de son album)
+local function tintOf(item)
+  if item.artistItem and item.rep then return item.rep.tint or T.palette[4] end
+  return item.tint or T.palette[4]
+end
+
+-- Albums / Artistes (depuis les Réglages)
+function S.setMode(m)
+  if S.mode == m then return end
+  S.mode, S.artist, S.sel = m, nil, 1
+  S.scroll, S.scrollTarget = 0, 0
+  App.saveSettings()
+end
+
+-- ouvrir / refermer un artiste
+local function openArtist(ar)
+  S.artist, S.sel = ar, 1
+  S.scroll, S.scrollTarget = 0, 0
+  rebuild()
+end
+local function closeArtist()
+  local ar = S.artist
+  S.artist = nil
+  S.scroll, S.scrollTarget = 0, 0
+  rebuild()
+  for i, it in ipairs(S.items) do if it == ar then S.sel = i; break end end
+end
 
 function S.enter(args)
   if stale() then rebuild() end
@@ -71,7 +118,7 @@ function S.update(dt)
     S.scrollTarget = math.max(0, tgt)
     S.scroll = T.damp(S.scroll, S.scrollTarget, 14, dt)
     -- teinte du fond selon l'album sélectionné
-    local tint = S.items[S.sel].tint or T.palette[4]
+    local tint = tintOf(S.items[S.sel])
     for i = 1, 3 do S.bg[i] = T.damp(S.bg[i], tint[i], 5, dt) end
     -- demande des pochettes visibles (les plus proches du curseur d'abord)
     local first, last
@@ -102,10 +149,14 @@ function S.action(a)
   local it = S.items[S.sel]
   if a == "a" then
     if it.all then shuffleAll()
+    elseif it.artistItem then openArtist(it)
     else App.go("tracks", { album = it }) end
     return true
+  elseif a == "b" then
+    if S.artist then closeArtist(); return true end
+    return false
   elseif a == "y" then
-    if not it.all and not it.fav then App.say("fav", Favs.toggleAlbum(it)) end
+    if not it.all and not it.fav and not it.artistItem and not it.noalbum then App.say("fav", Favs.toggleAlbum(it)) end
     return true
   end
   local grid = S.view == "grid"
@@ -122,7 +173,7 @@ end
 
 local function playingBadge(item, x, y, size)
   local P = App.player
-  if not P.current or item.all or item.fav then return end
+  if not P.current or item.all or item.fav or item.artistItem or item.noalbum then return end
   if P.current.album ~= item then return end
   local tint = item.tint or T.palette[4]
   local w, h = 36, 24
@@ -140,14 +191,18 @@ end
 
 local function subOf(item, long)
   if item.all then return long and I.t("all_sub") or I.n("tracks", #item.tracks) end
-  if item.fav then return I.n("tracks", #item.tracks) end
+  if item.fav or item.noalbum then return I.n("tracks", #item.tracks) end
+  if item.artistItem then
+    if #item.albums > 0 then return I.n("albums", #item.albums) end
+    return I.n("tracks", #item.tracks)
+  end
   return item.artist
 end
 
 local function gridCard(item, x, y, k)
   local size = COVER
   local sc = 1 + 0.08 * k
-  local tint = item.tint or T.palette[4]
+  local tint = tintOf(item)
   lg.push()
   lg.translate(x + size / 2, y + size / 2 - 5 * k)
   lg.scale(sc)
@@ -166,7 +221,7 @@ end
 
 local function listRow(item, y, k)
   local x, w, h = 28, 584, LROW_H
-  local tint = item.tint or T.palette[4]
+  local tint = tintOf(item)
   local sc = 1 + 0.015 * k
   lg.push()
   lg.translate(x + w / 2, y + h / 2)
@@ -196,8 +251,16 @@ end
 
 local function drawHeader()
   local lib = App.lib
-  local stats = I.n("albums", #lib.albums) .. "  ·  " .. I.n("tracks", #lib.tracks)
-  W.header({ I.t("music") }, stats, T.W - 28 - 40 - 12)
+  local crumbs, stats = { I.t("music") }, nil
+  if S.mode == "artists" and S.artist then
+    crumbs[2] = S.artist.title
+    stats = I.n("albums", #S.artist.albums) .. "  ·  " .. I.n("tracks", #S.artist.tracks)
+  elseif S.mode == "artists" then
+    stats = I.n("artists", #(lib.artists or {})) .. "  ·  " .. I.n("tracks", #lib.tracks)
+  else
+    stats = I.n("albums", #lib.albums) .. "  ·  " .. I.n("tracks", #lib.tracks)
+  end
+  W.header(crumbs, stats, T.W - 28 - 40 - 12)
   -- bouton Réglages (Select)
   local gx, gy = T.W - 28 - 20, 32
   T.shadow(gx - 20, gy - 20, 40, 40, 20, 8, 0.1, 3)
@@ -277,7 +340,11 @@ function S.draw()
     T.text(T.f.small, I.t("still_scanning", lib.count), 0, 62, T.c.ink3, 1, "right", T.W - 80)
   end
   if App.miniVisible() then W.mini(S.t) end
-  W.hints({ { "dpad", I.t("h_choose") }, { "A", I.t("h_open") }, { "X", I.t("h_random") }, { "Y", I.t("h_fav") }, { "SELECT", I.t("settings") } })
+  if S.artist then
+    W.hints({ { "dpad", I.t("h_choose") }, { "A", I.t("h_open") }, { "X", I.t("h_random") }, { "Y", I.t("h_fav") }, { "B", I.t("h_back") } })
+  else
+    W.hints({ { "dpad", I.t("h_choose") }, { "A", I.t("h_open") }, { "X", I.t("h_random") }, { "Y", I.t("h_fav") }, { "SELECT", I.t("settings") } })
+  end
 end
 
 return S
