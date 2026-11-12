@@ -110,11 +110,12 @@ function W.mini(t)
   if not cur then return end
   local x, y, w, h = 28, 396, 584, 56
   local album = cur.album
-  local tint = album and album.tint or T.palette[4]
+  local tint = C.trackTint(cur)
   T.shadow(x, y, w, h, 28, 12, 0.16, 5)
   T.set(T.c.surface, 0.97)
   T.rr("fill", x, y, w, h, 28)
-  if album then C.draw(album, x + 8, y + 8, 40) end
+  C.wantTrack(cur, 1) -- pochette du morceau si elle existe (sinon celle de l'album)
+  C.drawTrack(cur, x + 8, y + 8, 40)
   local tw = w - 60 - 124
   T.marquee(T.f.h2, cur.t, x + 60, y + 5, tw, T.c.ink, 1, "mini_t")
   T.marquee(T.f.small, (cur.ar ~= "" and cur.ar) or (album and album.title) or "", x + 60, y + 30, tw, T.c.ink2, 1, "mini_a")

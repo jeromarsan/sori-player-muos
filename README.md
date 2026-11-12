@@ -36,6 +36,7 @@ Albums with cover art, favorites, shuffle, and the screen can turn off while the
 ## Features
 
 - Browse your music **album by album**, with cover art (`cover.jpg`/`folder.jpg`… in the folder, or embedded in the tags). Folders without art get a Sori tile.
+- While playing, a track with its **own embedded cover** (e.g. added with Mp3tag) shows it; otherwise the album cover is used.
 - Scans the **`MUSIC` folder on both SD cards** (`/mnt/mmc/MUSIC` and `/mnt/sdcard/MUSIC`, any capitalisation).
 - MP3, FLAC, OGG and WAV.
 - **Favorites** folder (yellow star), always first, with all your favorite tracks. Favorite albums move to the top of the list.

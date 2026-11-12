@@ -14,7 +14,10 @@ local RX, RW = 352, 260 -- colonne de droite
 
 function S.enter()
   local cur = App.player.current
-  if cur and cur.album then for i = 1, 3 do S.bg[i] = cur.album.tint[i] end end
+  if cur and cur.album then
+    local tint = C.trackTint(cur)
+    for i = 1, 3 do S.bg[i] = tint[i] end
+  end
 end
 
 local function bump(name) S.press[name] = 1 end
@@ -40,9 +43,10 @@ function S.update(dt)
   local P = App.player
   local cur = P.current
   if cur and cur.album then
-    local a = cur.album
-    C.want(a, 0)
-    for i = 1, 3 do S.bg[i] = T.damp(S.bg[i], a.tint[i], 5, dt) end
+    -- pochette du morceau (Mp3tag…) si elle existe, sinon celle de l'album
+    C.wantTrack(cur, 0)
+    local tint = C.trackTint(cur)
+    for i = 1, 3 do S.bg[i] = T.damp(S.bg[i], tint[i], 5, dt) end
   end
   for k, v in pairs(S.press) do S.press[k] = v > 0.01 and v - dt * 4 or nil end
   S.live = T.damp(S.live, P.state == "playing" and 1 or 0, 5, dt)
@@ -103,7 +107,7 @@ function S.draw()
     return
   end
   local album = cur.album
-  local tint = (album and album.tint) or T.palette[4]
+  local tint = C.trackTint(cur)
   local playing = P.state == "playing"
 
   local crumbs = App.crumbs(album)
@@ -126,7 +130,7 @@ function S.draw()
   lg.scale(sc)
   lg.translate(-CS / 2, -CS / 2)
   T.shadow(0, 0, CS, CS, 42, 22, 0.2, 14, T.darken(tint, 0.35))
-  if album then C.draw(album, 0, 0, CS) end
+  C.drawTrack(cur, 0, 0, CS)
   lg.pop()
 
   -- colonne de droite : titre, artiste

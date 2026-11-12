@@ -4,7 +4,7 @@ Testé sur Anbernic RG40XXV avec muOS 2606.0 (Andromeda). *English version: [REA
 
 1. Télécharge `SoriPlayer-vX.Y.Z.zip` dans les Releases GitHub, puis copie le dossier **SoriPlayer** dans `/Primary Storage/MUOS/application/` (le dossier `MUOS/application` de la carte SD principale).
 2. Il faut LÖVE 11.x aarch64 : soit `SoriPlayer/bin/love` (+ `bin/lib/`), soit le runtime PortMaster (`love_11.5`).
-3. Musique : le dossier `MUSIC/` à la racine de chaque carte SD est analysé (`/mnt/mmc/MUSIC` sur la SD1 et `/mnt/sdcard/MUSIC` sur la SD2 ; `Music` ou `music` marchent aussi). Un dossier par album, pochette `cover.jpg` ou intégrée aux tags. Autre dossier : `music_dir=` dans `sori.cfg`.
+3. Musique : le dossier `MUSIC/` à la racine de chaque carte SD est analysé (`/mnt/mmc/MUSIC` sur la SD1 et `/mnt/sdcard/MUSIC` sur la SD2 ; `Music` ou `music` marchent aussi). Un dossier par album, pochette `cover.jpg` ou intégrée aux tags. Pendant la lecture, un morceau qui a sa propre image intégrée (ajoutée avec Mp3tag par exemple) l'affiche ; sinon c'est la pochette de l'album. Autre dossier : `music_dir=` dans `sori.cfg`.
 4. Problème ? lis `sori.log`. Si A et B sont inversés : `inverser_ab=1` dans `sori.cfg` (X et Y : `inverser_xy=1`) (et `debug_input=1` pour voir les boutons détectés).
 5. Réglages (Select depuis la liste des albums) : thème sombre/clair, couleur principale (bleu par défaut), langue (automatique = langue de la console ; français, anglais, espagnol, portugais, italien, allemand ; sinon anglais), affichage grille/liste, nouvelle recherche de la musique, et **Aide et raccourcis** (toutes les fonctions et tous les boutons, traduits dans les 6 langues).
 

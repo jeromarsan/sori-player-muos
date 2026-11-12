@@ -202,6 +202,7 @@ local function evict()
 end
 
 local function finish(album, data)
+  if album.dropped then if data then data:release() end; return end -- pochette de morceau oubliée entre-temps
   if not data then album.cvState = "none"; return end
   local ok, big, small = pcall(function()
     local img = lg.newImage(data)
@@ -337,6 +338,73 @@ function C.drawFav(x, y, size)
   local s = size / cv:getWidth()
   lg.setColor(1, 1, 1, 1)
   lg.draw(cv, x, y, 0, s, s)
+end
+
+---------------------------------------------------------------- pochette d'un morceau
+-- Un morceau qui a sa propre image intégrée (ex. ajoutée avec Mp3tag) l'affiche sur
+-- l'écran de lecture et le mini-lecteur ; sinon on garde la pochette de l'album.
+-- Seules les dernières pochettes de morceaux restent en mémoire.
+local trackItems, trackOrder = {}, {}
+local TRACK_KEEP = 6
+
+function C.trackItem(t)
+  local a = t and t.album
+  if not t or not t.co then return a end
+  -- même image que celle déjà utilisée pour l'album : rien à charger en plus
+  if a and a.cover and a.cover.path == t.p and a.cover.off == t.co.off then return a end
+  local it = trackItems[t]
+  if not it then
+    it = { cover = { path = t.p, off = t.co.off, len = t.co.len }, title = t.t, isTrack = true,
+           ci = a and a.ci or 4, tint = a and a.tint or T.palette[4] }
+    trackItems[t] = it
+    trackOrder[#trackOrder + 1] = t
+    while #trackOrder > TRACK_KEEP do
+      local old = table.remove(trackOrder, 1)
+      local o = trackItems[old]
+      trackItems[old] = nil
+      if o then
+        o.dropped = true
+        if o.cvState == "ready" then
+          o.thumb:release(); o.thumbS:release()
+          o.thumb, o.thumbS = nil, nil
+          loaded = loaded - 1
+        end
+      end
+    end
+  end
+  return it
+end
+
+-- Teinte à utiliser pour un morceau (celle de sa propre pochette si elle est chargée)
+function C.trackTint(t)
+  local it = C.trackItem(t)
+  if it and it.isTrack and it.cvState == "ready" then return it.tint end
+  return t and t.album and t.album.tint or T.palette[4]
+end
+
+-- Demande le chargement de la pochette du morceau (et de son album, pour l'attente)
+function C.wantTrack(t, prio)
+  if not t then return end
+  if t.album then C.want(t.album, prio) end
+  local it = C.trackItem(t)
+  if it and it.isTrack then C.want(it, prio) end
+end
+
+-- Dessine la pochette du morceau : celle de l'album, puis celle du morceau par-dessus dès qu'elle est prête
+function C.drawTrack(t, x, y, size, alpha)
+  if not t then return end
+  if t.album then C.draw(t.album, x, y, size, alpha) end
+  local it = C.trackItem(t)
+  if it and it.isTrack and it.cvState == "ready" then
+    it.used = frame
+    it.fade = math.min(1, (it.fade or 1) + 0.08)
+    local small = size <= 110
+    local tex = small and it.thumbS or it.thumb
+    local s = size / tex:getWidth()
+    lg.setColor(1, 1, 1, (alpha or 1) * it.fade)
+    lg.draw(tex, x, y, 0, s, s)
+    lg.setColor(1, 1, 1, 1)
+  end
 end
 
 -- pochette de n'importe quel élément (album, "Tout mélanger", "Favoris")
