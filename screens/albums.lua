@@ -260,7 +260,9 @@ local function drawHeader()
   else
     stats = I.n("albums", #lib.albums) .. "  ·  " .. I.n("tracks", #lib.tracks)
   end
-  W.header(crumbs, stats, T.W - 28 - 40 - 12)
+  -- batterie à gauche du bouton Réglages
+  local bw = W.battery(T.W - 28 - 40 - 14, 32)
+  W.header(crumbs, stats, T.W - 28 - 40 - 12 - (bw > 0 and bw + 14 or 0))
   -- bouton Réglages (Select)
   local gx, gy = T.W - 28 - 20, 32
   T.shadow(gx - 20, gy - 20, 40, 40, 20, 8, 0.1, 3)

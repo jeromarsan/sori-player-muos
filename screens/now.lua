@@ -112,7 +112,9 @@ function S.draw()
 
   local crumbs = App.crumbs(album)
   crumbs[#crumbs + 1] = I.t("now_playing")
-  W.header(crumbs)
+  -- batterie en haut à droite
+  local bw = W.battery(T.W - 28, 32)
+  W.header(crumbs, nil, T.W - 28 - (bw > 0 and bw + 14 or 0))
 
   -- notes qui flottent (derrière la pochette)
   for _, n in ipairs(S.notes) do

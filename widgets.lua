@@ -65,6 +65,79 @@ function W.logo(x, cy)
   return tx + ww
 end
 
+---------------------------------------------------------------- batterie
+-- Lue dans /sys/class/power_supply (toutes les 20 s). Rien n'est affiché si aucune batterie (PC).
+local Bat = { t = nil, pct = nil, charging = false, dir = false }
+
+local function readLine(path)
+  local f = io.open(path, "r")
+  if not f then return nil end
+  local s = f:read("*l")
+  f:close()
+  return s
+end
+
+local function batteryDir()
+  if Bat.dir ~= false then return Bat.dir end
+  Bat.dir = nil
+  local p = io.popen("ls -1 /sys/class/power_supply 2>/dev/null")
+  if p then
+    for name in p:lines() do
+      local base = "/sys/class/power_supply/" .. name
+      if (readLine(base .. "/type") or ""):lower() == "battery" and readLine(base .. "/capacity") then
+        Bat.dir = base
+        break
+      end
+    end
+    p:close()
+  end
+  return Bat.dir
+end
+
+local function batteryUpdate()
+  local now = love.timer.getTime()
+  if Bat.t and now - Bat.t < 20 then return end
+  Bat.t = now
+  local dir = batteryDir()
+  if not dir then Bat.pct = nil; return end
+  Bat.pct = tonumber(readLine(dir .. "/capacity"))
+  local st = (readLine(dir .. "/status") or ""):lower()
+  Bat.charging = (st == "charging" or st == "full")
+end
+
+-- Pile + pourcentage, alignés à droite sur xr, centrés sur cy. Renvoie la largeur utilisée (0 si rien).
+function W.battery(xr, cy)
+  batteryUpdate()
+  local pct = Bat.pct
+  if not pct then return 0 end
+  pct = math.max(0, math.min(100, pct))
+  local col = pct <= 20 and { 0.95, 0.33, 0.33 } or pct <= 30 and { 1.0, 0.62, 0.20 } or { 0.30, 0.82, 0.45 }
+  local bw, bh = 26, 14
+  local bx, by = xr - bw - 3, cy - bh / 2
+  -- corps + borne
+  lg.setLineWidth(1.6)
+  T.set(T.c.ink2)
+  T.rr("line", bx, by, bw, bh, 3.5)
+  T.rr("fill", bx + bw + 0.5, cy - 3, 2.5, 6, 1)
+  -- niveau
+  local iw = math.max(2, (bw - 4) * pct / 100)
+  T.set(col)
+  T.rr("fill", bx + 2, by + 2, iw, bh - 4, 2)
+  -- éclair en charge
+  if Bat.charging then
+    T.set(T.c.white)
+    local cx = bx + bw / 2
+    lg.polygon("fill", cx + 1.5, by + 1.5, cx - 3.5, cy + 1, cx - 0.5, cy + 1)
+    lg.polygon("fill", cx - 1.5, by + bh - 1.5, cx + 3.5, cy - 1, cx + 0.5, cy - 1)
+  end
+  -- pourcentage
+  local txt = pct .. "%"
+  local f = T.f.small
+  local tw = f:getWidth(txt)
+  T.text(f, txt, bx - 6 - tw, cy - f:getHeight() / 2, T.c.ink2)
+  return (xr - (bx - 6 - tw))
+end
+
 -- En-tête commun : logo + fil d'Ariane (liste de noms) + ligne d'info facultative.
 -- right = limite droite (pour laisser la place à des boutons)
 function W.header(crumbs, sub, right)
