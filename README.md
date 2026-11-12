@@ -88,7 +88,7 @@ Optional settings are in `sori.cfg` (extra music folders, screen-off delay, butt
 | Screen off | any button | Turn the screen back on (L1, R1, L2, R2 work without waking it) |
 
 > Don't use the **Power** button to turn off the screen: it puts the console to sleep and stops the music.
-> In muOS, set **Configuration › Power › Idle Input Sleep Timeout** to *Disabled* so the console doesn't suspend while you listen.
+> While music is playing, Sori tells muOS not to dim, mute or suspend the console (the same idle inhibit muOS uses for games). When paused, muOS idle settings apply as usual.
 
 ## Troubleshooting
 

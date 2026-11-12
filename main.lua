@@ -68,6 +68,40 @@ function App.screenOn()
   end
 end
 
+-- Empêcher muOS de couper le son / d'assombrir / de mettre en veille pendant la lecture.
+-- muhotkey relit ces fichiers toutes les 250 ms : s'ils contiennent le PID d'un processus vivant,
+-- l'inactivité est ignorée (même mécanisme que pour les jeux). On les retire à la pause / en quittant.
+local INHIBIT_FILES = { "/run/muos/idle_game_inhibit", "/run/muos/idle_sleep_inhibit" }
+local Inhibit = { on = false, pid = nil, tried = false }
+
+local function myPid()
+  local f = io.open("/proc/self/stat", "r")
+  if not f then return nil end
+  local line = f:read("*l") or ""
+  f:close()
+  return line:match("^(%d+)")
+end
+
+function App.setIdleInhibit(on)
+  if on == Inhibit.on then return end
+  if not Inhibit.tried then Inhibit.tried = true; Inhibit.pid = myPid() end
+  if not Inhibit.pid then return end -- pas sur la console (PC)
+  Inhibit.on = on
+  print(string.format("[sori] veille muOS %s (pid %s)", on and "bloquee" or "liberee", Inhibit.pid))
+  for _, path in ipairs(INHIBIT_FILES) do
+    if on then
+      local f, err = io.open(path, "w")
+      if f then f:write(Inhibit.pid, "\n"); f:close() else print("[sori] impossible d'ecrire " .. path .. " : " .. tostring(err)) end
+    else
+      -- on ne supprime que si c'est bien notre PID
+      local f = io.open(path, "r")
+      local cur = f and f:read("*l")
+      if f then f:close() end
+      if cur == Inhibit.pid then os.remove(path) end
+    end
+  end
+end
+
 local menuSolo, swallowed = false, {}
 local shotCombo, volBefore = false, nil -- capture d'écran muOS (L2 + R2 + X)
 
@@ -219,6 +253,8 @@ function love.update(dt)
   end
   if App.current and App.current.update then App.current.update(dt) end
   if devtest then devtest.update(dt) end
+  -- muOS ne doit ni couper le son ni mettre en veille tant que la musique joue
+  App.setIdleInhibit(P.state == "playing" or P.state == "loading")
   -- veille écran automatique pendant la lecture
   if not Screen.off and Screen.delay > 0 and P.state == "playing" then
     Screen.idle = Screen.idle + dt
@@ -310,6 +346,7 @@ function love.keyreleased(key)
 end
 
 function love.quit()
+  App.setIdleInhibit(false)
   App.screenOn()
   App.saveSettings()
   C.shutdown()
